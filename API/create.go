@@ -17,7 +17,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Decoding JSON into Movie struct
 		var movie Movie
-		if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&movie); err != nil || movie.Title == nil || movie.Year == nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -158,7 +158,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 				return
 			}
 			_, err = tx.Exec(
-				`INSERT OR IGNORE INTO movies_directors (movieId, genreId)
+				`INSERT OR IGNORE INTO movies_directors (movieId, directorId)
 				VALUES (?, ?)`,
 				movieId, directorId,
 			)

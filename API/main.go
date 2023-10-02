@@ -31,6 +31,8 @@ func main() {
 
 	r.Post("/create", app.insertMovieHandler(false))
 	r.Post("/force/create", app.insertMovieHandler(true))
+	r.Get("/get/{id}", app.getMovieByIdHandler)
+	r.Get("/get", app.getMovieHandler)
 	r.Put("/update/{id}", app.updateMovieHandler)
 	r.Delete("/delete/{id}", app.deleteMovieHandler)
 
