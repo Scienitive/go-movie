@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Schema of the return JSON
 type MovieJSON struct {
 	ID         int
 	Date       string
@@ -20,6 +21,7 @@ type MovieJSON struct {
 	Directors  []string
 }
 
+// Order Enum
 const (
 	OrderTitleDESC = iota
 	OrderTitleASC
@@ -37,6 +39,7 @@ const (
 	OrderDirectorsASC
 )
 
+// Base GET Request
 func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the query parameters
 	query := r.URL.Query()
@@ -53,38 +56,10 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		order = 0
 	}
 
-	orderSQL := ""
-	switch order {
-	case OrderTitleASC:
-		orderSQL = "movies.title ASC NULLS LAST"
-	case OrderYearDESC:
-		orderSQL = "movies.year DESC NULLS LAST"
-	case OrderYearASC:
-		orderSQL = "movies.year ASC NULLS LAST"
-	case OrderRatingDESC:
-		orderSQL = "movies.rating DESC NULLS LAST"
-	case OrderRatingASC:
-		orderSQL = "movies.rating ASC NULLS LAST"
-	case OrderImdbRatingDESC:
-		orderSQL = "movies.imdbRating DESC NULLS LAST"
-	case OrderImdbRatingASC:
-		orderSQL = "movies.imdbRating ASC NULLS LAST"
-	case OrderDateDESC:
-		orderSQL = "movies.dateAdded DESC NULLS LAST"
-	case OrderDateASC:
-		orderSQL = "movies.dateAdded ASC NULLS LAST"
-	case OrderGenresDESC:
-		orderSQL = "genre_names DESC NULLS LAST"
-	case OrderGenresASC:
-		orderSQL = "genre_names ASC NULLS LAST"
-	case OrderDirectorsDESC:
-		orderSQL = "director_names DESC NULLS LAST"
-	case OrderDirectorsASC:
-		orderSQL = "director_names ASC NULLS LAST"
-	default:
-		orderSQL = "movies.title DESC NULLS LAST"
-	}
-	fmt.Println(orderSQL)
+	// Prepeare the ORDER BY part of the SQL
+	orderSQL := setOrder(order)
+
+	// The SQL Query
 	SQL := fmt.Sprintf(
 		`SELECT
 		movies.id, movies.dateAdded, movies.title, movies.year, movies.rating, movies.imdbRating,
@@ -106,7 +81,8 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		OFFSET ?`,
 		orderSQL,
 	)
-	rows, err := app.db.Query(SQL, limit, skip)
+
+	// Variables to hold the values from SQL Query
 	var (
 		id         int
 		date       string
@@ -117,6 +93,9 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		genres     *string
 		directors  *string
 	)
+
+	// Executing the Query and stroring it in the movies slice
+	rows, err := app.db.Query(SQL, limit, skip)
 	movies := []MovieJSON{}
 	for rows.Next() {
 		err = rows.Scan(&id, &date, &title, &year, &rating, &imdbRating, &genres, &directors)
@@ -125,18 +104,6 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err.Error())
 			return
 		}
-		var genresSplit []string
-		var directorsSplit []string
-		if genres != nil {
-			genresSplit = strings.Split(*genres, ":")
-		} else {
-			genresSplit = []string{}
-		}
-		if directors != nil {
-			directorsSplit = strings.Split(*directors, ":")
-		} else {
-			directorsSplit = []string{}
-		}
 		movies = append(movies, MovieJSON{
 			ID:         id,
 			Title:      title,
@@ -144,11 +111,12 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 			Date:       date,
 			Rating:     rating,
 			ImdbRating: imdbRating,
-			Genres:     genresSplit,
-			Directors:  directorsSplit,
+			Genres:     strPtrToSlice(genres),
+			Directors:  strPtrToSlice(directors),
 		})
 	}
 
+	// Turning slice into JSON and returning it
 	json, err := json.Marshal(&movies)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -168,11 +136,14 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The struct and variables for storing the SQL Query results
 	movie := MovieJSON{}
 	var (
-		genresStr    string
-		directorsStr string
+		genres    *string
+		directors *string
 	)
+
+	// The SQL Query and storing them
 	row := app.db.QueryRow(
 		`SELECT
 		movies.id, movies.dateAdded, movies.title, movies.year, movies.rating, movies.imdbRating,
@@ -192,15 +163,16 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE movies.id = ?`,
 		id,
 	)
-	err = row.Scan(&movie.ID, &movie.Date, &movie.Title, &movie.Year, &movie.Rating, &movie.ImdbRating, &genresStr, &directorsStr)
+	err = row.Scan(&movie.ID, &movie.Date, &movie.Title, &movie.Year, &movie.Rating, &movie.ImdbRating, &genres, &directors)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Println(err.Error())
 		return
 	}
+	movie.Genres = strPtrToSlice(genres)
+	movie.Directors = strPtrToSlice(directors)
 
-	movie.Genres = strings.Split(genresStr, ":")
-	movie.Directors = strings.Split(directorsStr, ":")
+	// Turning slice into JSON and returning it
 	json, err := json.Marshal(&movie)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -209,4 +181,47 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add("Content-Type", "application/json")
 	fmt.Fprintln(w, string(json))
+}
+
+func setOrder(o int) string {
+	switch o {
+	case OrderTitleASC:
+		return "movies.title ASC NULLS LAST"
+	case OrderYearDESC:
+		return "movies.year DESC NULLS LAST"
+	case OrderYearASC:
+		return "movies.year ASC NULLS LAST"
+	case OrderRatingDESC:
+		return "movies.rating DESC NULLS LAST"
+	case OrderRatingASC:
+		return "movies.rating ASC NULLS LAST"
+	case OrderImdbRatingDESC:
+		return "movies.imdbRating DESC NULLS LAST"
+	case OrderImdbRatingASC:
+		return "movies.imdbRating ASC NULLS LAST"
+	case OrderDateDESC:
+		return "movies.dateAdded DESC NULLS LAST"
+	case OrderDateASC:
+		return "movies.dateAdded ASC NULLS LAST"
+	case OrderGenresDESC:
+		return "genre_names DESC NULLS LAST"
+	case OrderGenresASC:
+		return "genre_names ASC NULLS LAST"
+	case OrderDirectorsDESC:
+		return "director_names DESC NULLS LAST"
+	case OrderDirectorsASC:
+		return "director_names ASC NULLS LAST"
+	default:
+		return "movies.title DESC NULLS LAST"
+	}
+}
+
+func strPtrToSlice(str *string) []string {
+	var split []string
+	if str != nil {
+		split = strings.Split(*str, ":")
+	} else {
+		split = []string{}
+	}
+	return split
 }
