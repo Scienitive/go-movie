@@ -60,7 +60,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 					Message:     "Duplicate entries\nUse '/movies/force' to create the entry",
 					DuplicateID: idHolder,
 				}
-				json, err := json.Marshal(e)
+				jsonData, err := json.Marshal(e)
 				if err != nil {
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 					log.Println(err.Error())
@@ -68,7 +68,9 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				http.Error(w, string(json), http.StatusConflict)
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.WriteHeader(http.StatusConflict)
+				fmt.Fprintln(w, string(jsonData))
 				tx.Rollback()
 				return
 			} else if count > 1 {
