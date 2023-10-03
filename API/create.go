@@ -15,6 +15,12 @@ type CreateConflictError struct {
 
 func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Request Type Check
+		if r.Method != http.MethodPost {
+			http.Error(w, "Invalid Request Method", http.StatusMethodNotAllowed)
+			return
+		}
+
 		// Decoding JSON into Movie struct
 		var movie Movie
 		if err := json.NewDecoder(r.Body).Decode(&movie); err != nil || movie.Title == nil || movie.Year == nil {
@@ -51,7 +57,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 			}
 			if count == 1 {
 				e := CreateConflictError{
-					Message:     "Duplicate entries\nUse '/force/create' to create the entry",
+					Message:     "Duplicate entries\nUse '/movies/force' to create the entry",
 					DuplicateID: idHolder,
 				}
 				json, err := json.Marshal(e)
@@ -66,7 +72,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 				tx.Rollback()
 				return
 			} else if count > 1 {
-				http.Error(w, "Duplicate entries\nUse '/force/create' to create the entry", http.StatusConflict)
+				http.Error(w, "Duplicate entries\nUse '/movies/force' to create the entry", http.StatusConflict)
 				tx.Rollback()
 				return
 			}

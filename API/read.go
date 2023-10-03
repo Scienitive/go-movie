@@ -41,6 +41,12 @@ const (
 
 // Base GET Request
 func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
+	// Request Type Check
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid Request Method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Parse the query parameters
 	query := r.URL.Query()
 	limit, err := strconv.Atoi(query.Get("limit"))
@@ -128,8 +134,14 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
+	// Request Type Check
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid Request Method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Parse the URL to get the ID
-	idStr := r.URL.Path[len("/get/"):]
+	idStr := r.URL.Path[len("/movies/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
@@ -165,8 +177,7 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	err = row.Scan(&movie.ID, &movie.Date, &movie.Title, &movie.Year, &movie.Rating, &movie.ImdbRating, &genres, &directors)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Println(err.Error())
+		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
 		return
 	}
 	movie.Genres = strPtrToSlice(genres)

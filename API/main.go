@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -26,18 +24,12 @@ type Movie struct {
 func main() {
 	app := initializeDatabase()
 
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-
-	r.Post("/create", app.insertMovieHandler(false))
-	r.Post("/force/create", app.insertMovieHandler(true))
-	r.Get("/get/{id}", app.getMovieByIdHandler)
-	r.Get("/get", app.getMovieHandler)
-	r.Put("/update/{id}", app.updateMovieHandler)
-	r.Delete("/delete/{id}", app.deleteMovieHandler)
+	http.HandleFunc("/movies", app.moviesRouter)
+	http.HandleFunc("/movies/", app.moviesIdRouter)
+	http.HandleFunc("/movies/force", app.insertMovieHandler(true))
 
 	fmt.Println("Listening on port 8080...")
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":8080", nil)
 }
 
 func initializeDatabase() *App {
@@ -94,4 +86,28 @@ func initializeDatabase() *App {
 
 	app := &App{db: db}
 	return app
+}
+
+func (app *App) moviesRouter(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		app.insertMovieHandler(false)(w, r)
+	case http.MethodGet:
+		app.getMovieHandler(w, r)
+	default:
+		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
+	}
+}
+
+func (app *App) moviesIdRouter(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		app.updateMovieHandler(w, r)
+	case http.MethodGet:
+		app.getMovieByIdHandler(w, r)
+	case http.MethodDelete:
+		app.deleteMovieHandler(w, r)
+	default:
+		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
+	}
 }

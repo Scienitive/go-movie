@@ -9,6 +9,12 @@ import (
 )
 
 func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
+	// Request Type Check
+	if r.Method != http.MethodPut {
+		http.Error(w, "Invalid Request Method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Decoding JSON into Movie struct
 	var movie Movie
 	if err := json.NewDecoder(r.Body).Decode(&movie); err != nil || movie.Title == nil || movie.Year == nil {
@@ -25,7 +31,7 @@ func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the URL to get the ID
-	idStr := r.URL.Path[len("/update/"):]
+	idStr := r.URL.Path[len("/movies/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
@@ -34,7 +40,7 @@ func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the movie
-	_, err = tx.Exec(
+	res, err := tx.Exec(
 		`UPDATE movies
 		SET title = ?, year = ?, rating = ?, imdbRating = ?
 		WHERE id = ?`,
@@ -43,6 +49,18 @@ func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Println(err.Error())
+		tx.Rollback()
+		return
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println(err.Error())
+		tx.Rollback()
+		return
+	}
+	if count <= 0 {
+		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
 		tx.Rollback()
 		return
 	}
