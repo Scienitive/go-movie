@@ -40,7 +40,7 @@ func initializeDatabase() *App {
 
 	_, err = db.Exec(
 		`CREATE TABLE IF NOT EXISTS movies
-		(id INTEGER PRIMARY KEY, dateAdded TEXT, title TEXT, year INTEGER, rating INTEGER, imdbRating REAL)`,
+		(id INTEGER PRIMARY KEY, dateAdded INTEGER, title TEXT, year INTEGER, rating INTEGER, imdbRating REAL)`,
 	)
 	if err != nil {
 		panic(err.Error())

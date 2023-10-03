@@ -12,7 +12,7 @@ import (
 // Schema of the return JSON
 type MovieJSON struct {
 	ID         int
-	Date       string
+	Date       int
 	Title      string
 	Year       int
 	Rating     *int
@@ -91,7 +91,7 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	// Variables to hold the values from SQL Query
 	var (
 		id         int
-		date       string
+		date       int
 		title      string
 		year       int
 		rating     *int

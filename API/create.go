@@ -82,7 +82,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 		res, err := tx.Exec(
 			`INSERT INTO movies (dateAdded, title, year, rating, imdbRating)
 			VALUES (?, ?, ?, ?, ?)`,
-			time.Now().Format(time.DateTime), movie.Title, movie.Year, movie.Rating, movie.ImdbRating,
+			time.Now().Unix(), movie.Title, movie.Year, movie.Rating, movie.ImdbRating,
 		)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
