@@ -15,18 +15,22 @@ import (
 )
 
 type TUI struct {
-	App          *tview.Application
-	Pages        *tview.Pages
-	MainGrid     *tview.Grid
-	AddGrid      *tview.Grid
-	FilterGrid   *tview.Grid
-	BottomGrid   *tview.Grid
-	HeaderText   *tview.TextView
-	Table        *tview.Table
-	AddForm      *tview.Form
-	FilterForm   *tview.Form
-	AddButton    *tview.Button
-	FilterButton *tview.Button
+	App             *tview.Application
+	Pages           *tview.Pages
+	MainGrid        *tview.Grid
+	AddGrid         *tview.Grid
+	FilterGrid      *tview.Grid
+	BottomGrid      *tview.Grid
+	WarningGrid     *tview.Grid
+	HeaderText      *tview.TextView
+	Table           *tview.Table
+	AddForm         *tview.Form
+	FilterForm      *tview.Form
+	AddButton       *tview.Button
+	FilterButton    *tview.Button
+	WarningText     *tview.TextView
+	WarningOkButton *tview.Button
+	WarningNoButton *tview.Button
 }
 
 type Movie struct {
@@ -47,6 +51,7 @@ func initializeTUI() TUI {
 	t.MainGrid = tview.NewGrid()
 	t.AddGrid = tview.NewGrid()
 	t.FilterGrid = tview.NewGrid()
+	t.WarningGrid = tview.NewGrid()
 	t.BottomGrid = tview.NewGrid()
 	t.HeaderText = tview.NewTextView()
 	t.Table = tview.NewTable()
@@ -54,6 +59,9 @@ func initializeTUI() TUI {
 	t.FilterForm = tview.NewForm()
 	t.AddButton = tview.NewButton("Add Movie")
 	t.FilterButton = tview.NewButton("Filter")
+	t.WarningText = tview.NewTextView().SetTextAlign(tview.AlignCenter)
+	t.WarningOkButton = tview.NewButton("Yes")
+	t.WarningNoButton = tview.NewButton("No")
 
 	return t
 }
@@ -67,22 +75,58 @@ func main() {
 		SetEvaluateAllRows(true)
 	t.HeaderText.SetTextAlign(tview.AlignCenter)
 	t.AddButton.SetSelectedFunc(func() {
-		// fmt.Println("ASDADASDADADASDAS")
 		t.Pages.ShowPage("add")
 	})
 	t.AddForm.
-		AddInputField("Title: ", "", 20, nil, nil).
+		AddInputField("Title: ", "", 20, nil, t.checkAddButton).
 		AddInputField("Year: ", "", 10, func(textToCheck string, lastChar rune) bool {
 			_, err := strconv.Atoi(textToCheck)
 			if err != nil {
 				return false
 			}
 			return true
-		}, nil)
+		}, t.checkAddButton).
+		AddInputField("Your Rating: ", "", 4, func(textToCheck string, lastChar rune) bool {
+			val, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			} else if val <= 0 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("IMDB Rating: ", "", 4, func(textToCheck string, lastChar rune) bool {
+			afterDecimal := false
+			afterDecimalCount := 0
+			for _, c := range textToCheck {
+				if c == '.' {
+					afterDecimal = true
+				} else if afterDecimal {
+					afterDecimalCount++
+				}
+				if afterDecimalCount > 1 {
+					return false
+				}
+			}
+			val, err := strconv.ParseFloat(textToCheck, 32)
+			if err != nil {
+				return false
+			} else if val <= 0 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Genres: ", "", 40, nil, nil).
+		AddInputField("Directors: ", "", 40, nil, nil).
+		AddTextView("", "For adding multiple genres or directors, seperate each value with a comma ','", 40, 4, false, false).
+		AddButton("Add", t.addMovieButton)
+	t.AddForm.GetButton(0).SetDisabled(true)
 
 	// Layouts
 	modalWidth := 40
 	modalHeight := 40
+	warningWidth := 40
+	warningHeight := 4
 
 	t.BottomGrid.SetRows(0, 0, 0).SetColumns(0, 0, 0, 0, 0).
 		AddItem(t.AddButton, 1, 1, 1, 1, 0, 0, true).
@@ -99,6 +143,13 @@ func main() {
 	t.FilterGrid.SetColumns(0, modalWidth, 0).SetRows(0, modalHeight, 0).
 		AddItem(t.FilterForm, 1, 1, 1, 1, 0, 0, true)
 
+	t.WarningGrid.SetColumns(0, warningWidth, 0).SetRows(0, warningHeight, 0).
+		AddItem(tview.NewGrid().SetRows(3, 1).SetColumns(0, 0).
+			AddItem(t.WarningText, 0, 0, 1, 2, 0, 0, false).
+			AddItem(t.WarningOkButton, 1, 0, 1, 1, 0, 0, true).
+			AddItem(t.WarningNoButton, 1, 1, 1, 1, 0, 0, false),
+			1, 1, 1, 1, 0, 0, true)
+
 	// Configure apperances
 	tableTitle := fmt.Sprintf(" Table [ Ctrl-K ] ")
 	bottomTitle := fmt.Sprintf(" Buttons [ Ctrl-J ] ")
@@ -110,7 +161,8 @@ func main() {
 	t.Pages.
 		AddPage("main", t.MainGrid, true, true).
 		AddPage("add", t.AddGrid, true, false).
-		AddPage("filter", t.FilterGrid, true, false)
+		AddPage("filter", t.FilterGrid, true, false).
+		AddPage("warning", t.WarningGrid, true, false)
 
 	fillTable(t.Table)
 	t.setKeyBindings()
@@ -156,9 +208,44 @@ func (t *TUI) setKeyBindings() {
 	t.AddGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEsc:
-			t.AddForm.Clear(true)
+			for i := 0; i < t.AddForm.GetFormItemCount()-2; i++ {
+				t.AddForm.GetFormItem(i).(*tview.InputField).SetText("")
+			}
+			t.AddForm.GetButton(0).SetDisabled(true)
 			t.Pages.HidePage("add")
 			t.App.SetFocus(t.Table)
+		case tcell.KeyCtrlJ, tcell.KeyDown:
+			i, b := t.AddForm.GetFocusedItemIndex()
+			switch i {
+			case 0, 1, 2, 3, 4:
+				t.App.SetFocus(t.AddForm.GetFormItem(i + 1))
+			case 5:
+				button := t.AddForm.GetButton(0)
+				if button.IsDisabled() {
+					t.App.SetFocus(t.AddForm.GetFormItem(0))
+				} else {
+					t.App.SetFocus(button)
+				}
+			}
+			if b != -1 {
+				t.App.SetFocus(t.AddForm.GetFormItem(0))
+			}
+		case tcell.KeyCtrlK, tcell.KeyUp:
+			i, b := t.AddForm.GetFocusedItemIndex()
+			switch i {
+			case 1, 2, 3, 4, 5:
+				t.App.SetFocus(t.AddForm.GetFormItem(i - 1))
+			case 0:
+				button := t.AddForm.GetButton(0)
+				if button.IsDisabled() {
+					t.App.SetFocus(t.AddForm.GetFormItem(5))
+				} else {
+					t.App.SetFocus(button)
+				}
+			}
+			if b != -1 {
+				t.App.SetFocus(t.AddForm.GetFormItem(5))
+			}
 		}
 
 		return event
@@ -172,11 +259,24 @@ func (t *TUI) setKeyBindings() {
 
 		return event
 	})
-}
 
-func (t *TUI) addMovieHandler() {
-	// app.Pages.ShowPage("modal")
-	fmt.Println("SADASDSA")
+	t.WarningGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyLeft:
+			t.App.SetFocus(t.WarningOkButton)
+		case tcell.KeyRight:
+			t.App.SetFocus(t.WarningNoButton)
+		}
+
+		switch event.Rune() {
+		case 'h':
+			t.App.SetFocus(t.WarningOkButton)
+		case 'l':
+			t.App.SetFocus(t.WarningNoButton)
+		}
+
+		return event
+	})
 }
 
 func fillTable(table *tview.Table) error {
