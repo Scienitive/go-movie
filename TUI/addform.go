@@ -126,3 +126,51 @@ func (t *TUI) checkAddButton(text string) {
 		button.SetDisabled(true)
 	}
 }
+
+func (t *TUI) setupAddForm() {
+	t.AddButton.SetSelectedFunc(t.addMovieHandler)
+	t.AddForm.
+		AddInputField("Title: ", "", 30, nil, t.checkAddButton).
+		AddInputField("Year: ", "", 10, func(textToCheck string, lastChar rune) bool {
+			_, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			}
+			return true
+		}, t.checkAddButton).
+		AddInputField("Your Rating: ", "", 4, func(textToCheck string, lastChar rune) bool {
+			val, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("IMDB Rating: ", "", 4, func(textToCheck string, lastChar rune) bool {
+			afterDecimal := false
+			afterDecimalCount := 0
+			for _, c := range textToCheck {
+				if c == '.' {
+					afterDecimal = true
+				} else if afterDecimal {
+					afterDecimalCount++
+				}
+				if afterDecimalCount > 1 {
+					return false
+				}
+			}
+			val, err := strconv.ParseFloat(textToCheck, 32)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Genres: ", "", 30, nil, nil).
+		AddInputField("Directors: ", "", 30, nil, nil).
+		AddTextView("", "For adding multiple genres or directors, seperate each value with a comma ','", 40, 3, false, false).
+		AddButton("Add", t.addMovieButton)
+	t.AddForm.GetButton(0).SetDisabled(true)
+}
