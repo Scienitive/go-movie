@@ -21,6 +21,18 @@ type MovieJSON struct {
 	Directors  []string
 }
 
+type Filter struct {
+	Title     string
+	YearMax   string
+	YearMin   string
+	RatingMax string
+	RatingMin string
+	ImdbMax   string
+	ImdbMin   string
+	Genres    string
+	Directors string
+}
+
 // Order Enum
 const (
 	OrderTitleDESC = iota
@@ -62,6 +74,20 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		order = 0
 	}
 
+	// Filter query parameters
+	filter := Filter{}
+	filter.Title = query.Get("title")
+	filter.YearMax = query.Get("yearMax")
+	filter.YearMin = query.Get("yearMin")
+	filter.RatingMax = query.Get("ratingMax")
+	filter.RatingMin = query.Get("ratingMin")
+	filter.ImdbMax = query.Get("imdbMax")
+	filter.ImdbMin = query.Get("imdbMin")
+	filter.Genres = query.Get("genres")
+	filter.Directors = query.Get("directors")
+	filterSQL := setFilter(filter)
+	fmt.Println(filterSQL)
+
 	// Prepeare the ORDER BY part of the SQL
 	orderSQL := setOrder(order)
 
@@ -82,10 +108,11 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE movies_directors.movieId = movies.id
 		) AS director_names
 		FROM movies
+		%s
 		ORDER BY %s
 		LIMIT ?
 		OFFSET ?`,
-		orderSQL,
+		filterSQL, orderSQL,
 	)
 
 	// Variables to hold the values from SQL Query
@@ -225,6 +252,95 @@ func setOrder(o int) string {
 	default:
 		return "movies.title DESC NULLS LAST"
 	}
+}
+
+func setFilter(filter Filter) string {
+	filterCount := 0
+	filterSQL := ""
+
+	// General Filter SQL
+	if filter.Title != "" {
+		filterSQL = filterHelper(filterSQL, &filterCount)
+		filterSQL += fmt.Sprintf("movies.title LIKE '%%%s%%'", filter.Title)
+	}
+	if filter.YearMax != "" {
+		val, err := strconv.Atoi(filter.YearMax)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.year <= %d", val)
+		}
+	}
+	if filter.YearMin != "" {
+		val, err := strconv.Atoi(filter.YearMin)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.year >= %d", val)
+		}
+	}
+	if filter.RatingMax != "" {
+		val, err := strconv.Atoi(filter.RatingMax)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.rating <= %d", val)
+		}
+	}
+	if filter.RatingMin != "" {
+		val, err := strconv.Atoi(filter.RatingMin)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.rating >= %d", val)
+		}
+	}
+	if filter.ImdbMax != "" {
+		val, err := strconv.ParseFloat(filter.ImdbMax, 32)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.imdbRating <= %.1f", val)
+		}
+	}
+	if filter.ImdbMin != "" {
+		val, err := strconv.ParseFloat(filter.ImdbMin, 32)
+		if err == nil {
+			filterSQL = filterHelper(filterSQL, &filterCount)
+			filterSQL += fmt.Sprintf("movies.imdbRating >= %.1f", val)
+		}
+	}
+	if filter.Genres != "" {
+		filterSQL = filterHelper(filterSQL, &filterCount)
+		genresArr := strings.Split(filter.Genres, ",")
+		filterSQL += "("
+		for i, genre := range genresArr {
+			if i != 0 {
+				filterSQL += " OR "
+			}
+			filterSQL += fmt.Sprintf("genre_names LIKE '%%%s%%'", strings.TrimSpace(genre))
+		}
+		filterSQL += ")"
+	}
+	if filter.Directors != "" {
+		filterSQL = filterHelper(filterSQL, &filterCount)
+		directorsArr := strings.Split(filter.Directors, ",")
+		filterSQL += "("
+		for i, director := range directorsArr {
+			if i != 0 {
+				filterSQL += " OR "
+			}
+			filterSQL += fmt.Sprintf("director_names LIKE '%%%s%%'", strings.TrimSpace(director))
+		}
+		filterSQL += ")"
+	}
+
+	return filterSQL
+}
+
+func filterHelper(str string, count *int) string {
+	if *count == 0 {
+		str = "WHERE "
+	} else {
+		str += " AND "
+	}
+	*count++
+	return str
 }
 
 func strPtrToSlice(str *string) []string {
