@@ -36,6 +36,16 @@ type TUI struct {
 	Movies      []Movie
 	EditMovieID int
 	MoviesOrder int
+
+	FilterTitle         string
+	FilterYearMax       string
+	FilterYearMin       string
+	FilterRatingMax     string
+	FilterRatingMin     string
+	FilterImdbRatingMax string
+	FilterImdbRatingMin string
+	FilterDirectors     string
+	FilterGenres        string
 }
 
 type Movie struct {
@@ -95,7 +105,7 @@ func main() {
 			val, err := strconv.Atoi(textToCheck)
 			if err != nil {
 				return false
-			} else if val <= 0 || val > 10 {
+			} else if val < 1 || val > 10 {
 				return false
 			}
 			return true
@@ -116,7 +126,7 @@ func main() {
 			val, err := strconv.ParseFloat(textToCheck, 32)
 			if err != nil {
 				return false
-			} else if val <= 0 || val > 10 {
+			} else if val < 1 || val > 10 {
 				return false
 			}
 			return true
@@ -126,6 +136,100 @@ func main() {
 		AddTextView("", "For adding multiple genres or directors, seperate each value with a comma ','", 40, 4, false, false).
 		AddButton("Add", t.addMovieButton)
 	t.AddForm.GetButton(0).SetDisabled(true)
+
+	t.FilterButton.SetSelectedFunc(func() {
+		t.FilterForm.GetFormItem(0).(*tview.InputField).SetText(t.FilterTitle)
+		t.FilterForm.GetFormItem(1).(*tview.InputField).SetText(t.FilterYearMax)
+		t.FilterForm.GetFormItem(2).(*tview.InputField).SetText(t.FilterYearMin)
+		t.FilterForm.GetFormItem(3).(*tview.InputField).SetText(t.FilterRatingMax)
+		t.FilterForm.GetFormItem(4).(*tview.InputField).SetText(t.FilterRatingMin)
+		t.FilterForm.GetFormItem(5).(*tview.InputField).SetText(t.FilterImdbRatingMax)
+		t.FilterForm.GetFormItem(6).(*tview.InputField).SetText(t.FilterImdbRatingMin)
+		t.FilterForm.GetFormItem(7).(*tview.InputField).SetText(t.FilterDirectors)
+		t.FilterForm.GetFormItem(8).(*tview.InputField).SetText(t.FilterGenres)
+		t.Pages.ShowPage("filter")
+		t.App.SetFocus(t.FilterForm.GetFormItem(0))
+	})
+	t.FilterForm.
+		AddInputField("Title: ", "", 20, nil, nil).
+		AddInputField("Year (Max): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			_, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Year (Min): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			_, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Your Rating (Max): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			val, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Your Rating (Min): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			val, err := strconv.Atoi(textToCheck)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("IMDB Rating (Max): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			afterDecimal := false
+			afterDecimalCount := 0
+			for _, c := range textToCheck {
+				if c == '.' {
+					afterDecimal = true
+				} else if afterDecimal {
+					afterDecimalCount++
+				}
+				if afterDecimalCount > 1 {
+					return false
+				}
+			}
+			val, err := strconv.ParseFloat(textToCheck, 32)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("IMDB Rating (Min): ", "", 20, func(textToCheck string, lastChar rune) bool {
+			afterDecimal := false
+			afterDecimalCount := 0
+			for _, c := range textToCheck {
+				if c == '.' {
+					afterDecimal = true
+				} else if afterDecimal {
+					afterDecimalCount++
+				}
+				if afterDecimalCount > 1 {
+					return false
+				}
+			}
+			val, err := strconv.ParseFloat(textToCheck, 32)
+			if err != nil {
+				return false
+			} else if val < 1 || val > 10 {
+				return false
+			}
+			return true
+		}, nil).
+		AddInputField("Directors: ", "", 20, nil, nil).
+		AddInputField("Genres: ", "", 20, nil, nil).
+		AddTextView("", "For adding multiple filters for genres or directors, seperate each value with a comma ','", 40, 6, false, false).
+		AddButton("Filter", t.filterMovieButton)
 
 	// Layouts
 	modalWidth := 40
@@ -275,6 +379,28 @@ func (t *TUI) setKeyBindings() {
 		switch event.Key() {
 		case tcell.KeyEsc:
 			t.Pages.HidePage("filter")
+		case tcell.KeyCtrlJ, tcell.KeyDown:
+			i, b := t.FilterForm.GetFocusedItemIndex()
+			switch i {
+			case 0, 1, 2, 3, 4, 5, 6, 7:
+				t.App.SetFocus(t.FilterForm.GetFormItem(i + 1))
+			case 8:
+				t.App.SetFocus(t.FilterForm.GetButton(0))
+			}
+			if b != -1 {
+				t.App.SetFocus(t.FilterForm.GetFormItem(0))
+			}
+		case tcell.KeyCtrlK, tcell.KeyUp:
+			i, b := t.FilterForm.GetFocusedItemIndex()
+			switch i {
+			case 1, 2, 3, 4, 5, 6, 7, 8:
+				t.App.SetFocus(t.FilterForm.GetFormItem(i - 1))
+			case 0:
+				t.App.SetFocus(t.FilterForm.GetButton(0))
+			}
+			if b != -1 {
+				t.App.SetFocus(t.FilterForm.GetFormItem(8))
+			}
 		}
 
 		return event
@@ -301,7 +427,7 @@ func (t *TUI) setKeyBindings() {
 
 func (t *TUI) fillTable(table *tview.Table) error {
 	initialMovieCount := 100000
-	movies, err := getMovies(initialMovieCount, 0, t.MoviesOrder)
+	movies, err := t.getMovies(initialMovieCount, 0, t.MoviesOrder)
 	if err != nil {
 		return err
 	}
@@ -425,13 +551,24 @@ func (t *TUI) textPlacer(movies []Movie, row int, col int) string {
 	return ""
 }
 
-func getMovies(limit int, skip int, order int) ([]Movie, error) {
+func (t *TUI) getMovies(limit int, skip int, order int) ([]Movie, error) {
 	theURL := "http://localhost:8080/movies"
 	queryParams := url.Values{}
 
 	queryParams.Add("limit", strconv.Itoa(limit))
 	queryParams.Add("skip", strconv.Itoa(skip))
 	queryParams.Add("order", strconv.Itoa(order))
+
+	// Filter queryParams
+	queryParams.Add("title", t.FilterTitle)
+	queryParams.Add("yearMax", t.FilterYearMax)
+	queryParams.Add("yearMin", t.FilterYearMin)
+	queryParams.Add("ratingMax", t.FilterRatingMax)
+	queryParams.Add("ratingMin", t.FilterRatingMin)
+	queryParams.Add("imdbMax", t.FilterImdbRatingMax)
+	queryParams.Add("imdbMin", t.FilterImdbRatingMin)
+	queryParams.Add("directors", t.FilterDirectors)
+	queryParams.Add("genres", t.FilterGenres)
 
 	finalURL := theURL + "?" + queryParams.Encode()
 	req, err := http.NewRequest("GET", finalURL, nil)

@@ -86,7 +86,6 @@ func (app *App) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	filter.Genres = query.Get("genres")
 	filter.Directors = query.Get("directors")
 	filterSQL := setFilter(filter)
-	fmt.Println(filterSQL)
 
 	// Prepeare the ORDER BY part of the SQL
 	orderSQL := setOrder(order)
