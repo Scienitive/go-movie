@@ -21,6 +21,20 @@ type MovieAdd struct {
 	Directors  []string
 }
 
+func (t *TUI) addMovieHandler() {
+	t.AddForm.GetFormItem(0).(*tview.InputField).SetText("")
+	t.AddForm.GetFormItem(1).(*tview.InputField).SetText("")
+	t.AddForm.GetFormItem(2).(*tview.InputField).SetText("")
+	t.AddForm.GetFormItem(3).(*tview.InputField).SetText("")
+	t.AddForm.GetFormItem(4).(*tview.InputField).SetText("")
+	t.AddForm.GetFormItem(5).(*tview.InputField).SetText("")
+	t.AddForm.GetButton(0).SetLabel("Add")
+	t.AddForm.GetButton(0).SetDisabled(true)
+	t.AddForm.GetButton(0).SetSelectedFunc(t.addMovieButton)
+	t.Pages.ShowPage("add")
+	t.App.SetFocus(t.AddForm.GetFormItem(0))
+}
+
 func (t *TUI) addMovieButton() {
 	movie := MovieAdd{}
 
@@ -83,7 +97,7 @@ func (t *TUI) addMovieButton() {
 			client.Do(req)
 			t.Pages.HidePage("warning")
 			t.Table.Clear()
-			fillTable(t.Table)
+			t.fillTable(t.Table)
 		})
 		t.WarningNoButton.SetSelectedFunc(func() {
 			t.Pages.HidePage("warning")
@@ -96,7 +110,7 @@ func (t *TUI) addMovieButton() {
 	}
 
 	t.Table.Clear()
-	fillTable(t.Table)
+	t.fillTable(t.Table)
 	t.Pages.HidePage("add")
 }
 

@@ -31,6 +31,9 @@ type TUI struct {
 	WarningText     *tview.TextView
 	WarningOkButton *tview.Button
 	WarningNoButton *tview.Button
+
+	Movies      []Movie
+	EditMovieID int
 }
 
 type Movie struct {
@@ -73,10 +76,9 @@ func main() {
 	t.Table.SetFixed(1, 0).SetSelectable(true, false).
 		SetSelectedStyle(tcell.StyleDefault.Background(tcell.NewRGBColor(140, 140, 140))).
 		SetEvaluateAllRows(true)
+	t.Table.SetSelectedFunc(t.editMovieHandler)
 	t.HeaderText.SetTextAlign(tview.AlignCenter)
-	t.AddButton.SetSelectedFunc(func() {
-		t.Pages.ShowPage("add")
-	})
+	t.AddButton.SetSelectedFunc(t.addMovieHandler)
 	t.AddForm.
 		AddInputField("Title: ", "", 20, nil, t.checkAddButton).
 		AddInputField("Year: ", "", 10, func(textToCheck string, lastChar rune) bool {
@@ -164,7 +166,7 @@ func main() {
 		AddPage("filter", t.FilterGrid, true, false).
 		AddPage("warning", t.WarningGrid, true, false)
 
-	fillTable(t.Table)
+	t.fillTable(t.Table)
 	t.setKeyBindings()
 
 	if err := t.App.SetRoot(t.Pages, true).SetFocus(t.Pages).Run(); err != nil {
@@ -222,7 +224,7 @@ func (t *TUI) setKeyBindings() {
 			case 5:
 				button := t.AddForm.GetButton(0)
 				if button.IsDisabled() {
-					t.App.SetFocus(t.AddForm.GetFormItem(0))
+					t.App.SetFocus(t.AddForm.GetFormItem(5))
 				} else {
 					t.App.SetFocus(button)
 				}
@@ -279,12 +281,13 @@ func (t *TUI) setKeyBindings() {
 	})
 }
 
-func fillTable(table *tview.Table) error {
+func (t *TUI) fillTable(table *tview.Table) error {
 	initialMovieCount := 100000
 	movies, err := getMovies(initialMovieCount, 0)
 	if err != nil {
 		return err
 	}
+	t.Movies = movies
 
 	for row := 0; row < len(movies)+1; row++ {
 		for col := 0; col < 7; col++ {
