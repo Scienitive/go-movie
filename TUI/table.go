@@ -162,7 +162,7 @@ func (t *TUI) getMovies(limit int, skip int) ([]Movie, error) {
 	}
 
 	client := http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: 2 * time.Second,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
