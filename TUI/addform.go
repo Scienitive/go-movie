@@ -89,6 +89,8 @@ func (t *TUI) addMovieButton() {
 	if resp.StatusCode == http.StatusConflict {
 		warningText := fmt.Sprintf("There already is a movie named %s (%d) in the database. Do you want to add another one?", movie.Title, movie.Year)
 		t.WarningText.SetText(warningText)
+		t.WarningOkButton.SetLabel("Yes")
+		t.WarningNoButton.SetLabel("No")
 		t.WarningOkButton.SetSelectedFunc(func() {
 			req, err := http.NewRequest("POST", "http://localhost:8080/movies/force", bytes.NewBuffer(jsonData))
 			if err != nil {

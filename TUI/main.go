@@ -20,6 +20,7 @@ type TUI struct {
 	MainGrid        *tview.Grid
 	AddGrid         *tview.Grid
 	FilterGrid      *tview.Grid
+	TopGrid         *tview.Grid
 	BottomGrid      *tview.Grid
 	WarningGrid     *tview.Grid
 	HeaderText      *tview.TextView
@@ -34,6 +35,7 @@ type TUI struct {
 
 	Movies      []Movie
 	EditMovieID int
+	MoviesOrder int
 }
 
 type Movie struct {
@@ -55,6 +57,7 @@ func initializeTUI() TUI {
 	t.AddGrid = tview.NewGrid()
 	t.FilterGrid = tview.NewGrid()
 	t.WarningGrid = tview.NewGrid()
+	t.TopGrid = tview.NewGrid()
 	t.BottomGrid = tview.NewGrid()
 	t.HeaderText = tview.NewTextView()
 	t.Table = tview.NewTable()
@@ -63,8 +66,8 @@ func initializeTUI() TUI {
 	t.AddButton = tview.NewButton("Add Movie")
 	t.FilterButton = tview.NewButton("Filter")
 	t.WarningText = tview.NewTextView().SetTextAlign(tview.AlignCenter)
-	t.WarningOkButton = tview.NewButton("Yes")
-	t.WarningNoButton = tview.NewButton("No")
+	t.WarningOkButton = tview.NewButton("")
+	t.WarningNoButton = tview.NewButton("")
 
 	return t
 }
@@ -130,12 +133,15 @@ func main() {
 	warningWidth := 40
 	warningHeight := 4
 
+	t.TopGrid.SetRows(0, 0, 0).SetColumns(0).
+		AddItem(t.HeaderText, 1, 0, 1, 1, 0, 0, false)
+
 	t.BottomGrid.SetRows(0, 0, 0).SetColumns(0, 0, 0, 0, 0).
 		AddItem(t.AddButton, 1, 1, 1, 1, 0, 0, true).
 		AddItem(t.FilterButton, 1, 3, 1, 1, 0, 0, false)
 
 	t.MainGrid.SetRows(3, 0, 6).SetColumns(0).SetBorders(false).
-		AddItem(t.HeaderText, 0, 0, 1, 1, 0, 0, false).
+		AddItem(t.TopGrid, 0, 0, 1, 1, 0, 0, false).
 		AddItem(t.Table, 1, 0, 1, 1, 0, 0, true).
 		AddItem(t.BottomGrid, 2, 0, 1, 1, 0, 0, false)
 
@@ -157,7 +163,7 @@ func main() {
 	bottomTitle := fmt.Sprintf(" Buttons [ Ctrl-J ] ")
 	t.Table.SetTitle(tableTitle).SetBorder(true)
 	t.BottomGrid.SetTitle(bottomTitle).SetBorder(true)
-	t.HeaderText.SetLabel("ZAZAZ").SetText("ASDASD")
+	t.HeaderText.SetText("[Q, W, E, R] For Ordering | [D] For Deleting").SetTextAlign(tview.AlignCenter)
 
 	// Set Pages
 	t.Pages.
@@ -175,6 +181,18 @@ func main() {
 }
 
 func (t *TUI) setKeyBindings() {
+	// Table Keybindings
+	t.Table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'q', 'w', 'e', 'r', 't', 'y':
+			t.orderFilter(event.Rune())
+		case 'd':
+			row, _ := t.Table.GetSelection()
+			t.deleteMovie(t.Movies[row-1])
+		}
+
+		return event
+	})
 	// MainGrid Keybindings
 	t.MainGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -283,7 +301,7 @@ func (t *TUI) setKeyBindings() {
 
 func (t *TUI) fillTable(table *tview.Table) error {
 	initialMovieCount := 100000
-	movies, err := getMovies(initialMovieCount, 0)
+	movies, err := getMovies(initialMovieCount, 0, t.MoviesOrder)
 	if err != nil {
 		return err
 	}
@@ -311,7 +329,7 @@ func (t *TUI) fillTable(table *tview.Table) error {
 				row,
 				col,
 				&tview.TableCell{
-					Text:            textPlacer(movies, row, col),
+					Text:            t.textPlacer(movies, row, col),
 					Color:           color,
 					BackgroundColor: bgColor,
 					Align:           align,
@@ -324,23 +342,59 @@ func (t *TUI) fillTable(table *tview.Table) error {
 	return nil
 }
 
-func textPlacer(movies []Movie, row int, col int) string {
+func (t *TUI) textPlacer(movies []Movie, row int, col int) string {
 	if row == 0 {
 		switch col {
 		case 0:
 			return "Date Added"
 		case 1:
-			return "Year"
+			if t.MoviesOrder == 2 {
+				return "[Q\r] Year ↓"
+			} else if t.MoviesOrder == 3 {
+				return "[Q\r] Year ↑"
+			} else {
+				return "[Q\r] Year"
+			}
 		case 2:
-			return "Title"
+			if t.MoviesOrder == 0 {
+				return "[W\r] Title ↓"
+			} else if t.MoviesOrder == 1 {
+				return "[W\r] Title ↑"
+			} else {
+				return "[W\r] Title"
+			}
 		case 3:
-			return "Your Rating"
+			if t.MoviesOrder == 4 {
+				return "[E\r] Your Rating ↓"
+			} else if t.MoviesOrder == 5 {
+				return "[E\r] Your Rating ↑"
+			} else {
+				return "[E\r] Your Rating"
+			}
 		case 4:
-			return "IMDB Score"
+			if t.MoviesOrder == 6 {
+				return "[R\r] IMDB Rating ↓"
+			} else if t.MoviesOrder == 7 {
+				return "[R\r] IMDB Rating ↑"
+			} else {
+				return "[R\r] IMDB Rating"
+			}
 		case 5:
-			return "Directors"
+			if t.MoviesOrder == 12 {
+				return "[T\r] Directors ↓"
+			} else if t.MoviesOrder == 13 {
+				return "[T\r] Directors ↑"
+			} else {
+				return "[T\r] Diretors"
+			}
 		case 6:
-			return "Genres"
+			if t.MoviesOrder == 10 {
+				return "[Y\r] Genres ↓"
+			} else if t.MoviesOrder == 11 {
+				return "[Y\r] Genres ↑"
+			} else {
+				return "[Y\r] Genres"
+			}
 		}
 	} else {
 		switch col {
@@ -371,12 +425,13 @@ func textPlacer(movies []Movie, row int, col int) string {
 	return ""
 }
 
-func getMovies(limit int, skip int) ([]Movie, error) {
+func getMovies(limit int, skip int, order int) ([]Movie, error) {
 	theURL := "http://localhost:8080/movies"
 	queryParams := url.Values{}
 
 	queryParams.Add("limit", strconv.Itoa(limit))
 	queryParams.Add("skip", strconv.Itoa(skip))
+	queryParams.Add("order", strconv.Itoa(order))
 
 	finalURL := theURL + "?" + queryParams.Encode()
 	req, err := http.NewRequest("GET", finalURL, nil)
