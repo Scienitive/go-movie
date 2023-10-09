@@ -36,7 +36,7 @@ func main() {
 }
 
 func initializeDatabase() *App {
-	db, err := sql.Open("sqlite3", "../database.db")
+	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		panic(err.Error())
 	}

@@ -15,3 +15,5 @@ cli-imdb:
 
 cli-letterboxd:
 	go run CLI/main.go -port $(PORT) -L $(FILE)
+
+.PHONY: api tui cli-imdb cli-letterboxd
