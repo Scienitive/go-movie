@@ -13,23 +13,29 @@ func (t *TUI) setKeyBindings() {
 			t.orderFilter(event.Rune())
 		case 'd':
 			row, _ := t.Table.GetSelection()
-			t.deleteMovie(t.Movies[row-1])
+			if row <= len(t.Movies) {
+				t.deleteMovie(t.Movies[row-1])
+			}
 		}
 
 		switch event.Key() {
 		case tcell.KeyCtrlD:
-			row, _ := t.Table.GetSelection()
-			if row+25 <= len(t.Movies) {
-				t.Table.Select(row+25, 0)
-			} else {
-				t.Table.Select(len(t.Movies), 0)
+			if len(t.Movies) > 0 {
+				row, _ := t.Table.GetSelection()
+				if row+25 <= len(t.Movies) {
+					t.Table.Select(row+25, 0)
+				} else {
+					t.Table.Select(len(t.Movies), 0)
+				}
 			}
 		case tcell.KeyCtrlU:
-			row, _ := t.Table.GetSelection()
-			if row-25 >= 1 {
-				t.Table.Select(row-25, 0)
-			} else {
-				t.Table.Select(1, 0)
+			if len(t.Movies) > 0 {
+				row, _ := t.Table.GetSelection()
+				if row-25 >= 1 {
+					t.Table.Select(row-25, 0)
+				} else {
+					t.Table.Select(1, 0)
+				}
 			}
 		}
 

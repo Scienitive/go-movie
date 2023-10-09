@@ -54,6 +54,17 @@ func (t *TUI) fillTable(table *tview.Table) error {
 			)
 		}
 	}
+
+	row, _ := t.Table.GetSelection()
+	if row > len(t.Movies) && len(t.Movies) > 0 {
+		t.Table.Select(len(t.Movies), 0)
+	}
+
+	if len(t.Movies) > 0 {
+		t.Table.SetSelectable(true, false)
+	} else {
+		t.Table.SetSelectable(false, false)
+	}
 	return nil
 }
 
