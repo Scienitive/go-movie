@@ -1,6 +1,6 @@
 # moviterm
 
-A movie rating app on terminal.
+A movie rating app for terminal.
 
 I made this project to learn more about Go programming language.
 
