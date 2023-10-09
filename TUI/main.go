@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -24,6 +26,7 @@ type TUI struct {
 	WarningOkButton *tview.Button
 	WarningNoButton *tview.Button
 
+	Port        int
 	Movies      []Movie
 	EditMovieID int
 	MoviesOrder int
@@ -51,7 +54,9 @@ type Movie struct {
 }
 
 func main() {
-	t := initializeTUI()
+	fPort := flag.Int("port", 8080, "Port of the API")
+	flag.Parse()
+	t := initializeTUI(*fPort)
 
 	// Setup elements
 	t.Table.SetFixed(1, 0).SetSelectable(true, false).
@@ -118,7 +123,7 @@ func main() {
 	}
 }
 
-func initializeTUI() TUI {
+func initializeTUI(port int) TUI {
 	t := TUI{}
 	t.App = tview.NewApplication()
 	t.Pages = tview.NewPages()
@@ -137,6 +142,7 @@ func initializeTUI() TUI {
 	t.WarningText = tview.NewTextView().SetTextAlign(tview.AlignCenter)
 	t.WarningOkButton = tview.NewButton("")
 	t.WarningNoButton = tview.NewButton("")
+	t.Port = port
 
 	return t
 }

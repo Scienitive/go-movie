@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"net/http"
 
@@ -22,14 +23,16 @@ type Movie struct {
 }
 
 func main() {
+	fPort := flag.Int("port", 8080, "Port of the API")
+	flag.Parse()
 	app := initializeDatabase()
 
 	http.HandleFunc("/movies", app.moviesRouter)
 	http.HandleFunc("/movies/", app.moviesIdRouter)
 	http.HandleFunc("/movies/force", app.insertMovieHandler(true))
 
-	fmt.Println("Listening on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	fmt.Printf("Listening on port %d...\n", *fPort)
+	http.ListenAndServe(fmt.Sprintf(":%d", *fPort), nil)
 }
 
 func initializeDatabase() *App {

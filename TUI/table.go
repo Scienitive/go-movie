@@ -137,7 +137,7 @@ func (t *TUI) textPlacer(movies []Movie, row int, col int) string {
 }
 
 func (t *TUI) getMovies(limit int, skip int) ([]Movie, error) {
-	theURL := "http://localhost:8080/movies"
+	theURL := fmt.Sprintf("http://localhost:%d/movies", t.Port)
 	queryParams := url.Values{}
 
 	queryParams.Add("limit", strconv.Itoa(limit))

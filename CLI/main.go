@@ -39,10 +39,12 @@ func main() {
 	var (
 		fImdb  = flag.Bool("I", false, "IMDB Flag")
 		fLboxd = flag.Bool("L", false, "Letterboxd Flag")
+		fPort  = flag.Int("port", 8080, "Port of the API")
 	)
 
 	// Store the non-flag arguments
 	flag.Parse()
+	port := *fPort
 	args := flag.Args()
 
 	// Error Handling
@@ -62,14 +64,15 @@ func main() {
 	}
 
 	// The Thing
+	theURL := fmt.Sprintf("http://localhost:%d/movies", port)
 	if *fImdb {
-		readFileIMDB(file)
+		readFileIMDB(file, theURL)
 	} else {
-		readFileLetterboxd(file)
+		readFileLetterboxd(file, theURL)
 	}
 }
 
-func readFileIMDB(file *os.File) {
+func readFileIMDB(file *os.File, url string) {
 	fileScanner := bufio.NewScanner(file)
 	i := 0
 	for fileScanner.Scan() {
@@ -109,7 +112,7 @@ func readFileIMDB(file *os.File) {
 		client := http.Client{
 			Timeout: time.Second,
 		}
-		resp, err := client.Post("http://localhost:8080/movies", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
 			errorExit("Cannot send request to server.\nMake sure the API is on.")
 		}
@@ -123,7 +126,7 @@ func readFileIMDB(file *os.File) {
 			fmt.Printf("%s (%d) added!\n", entry.Title, entry.Year)
 		} else if resp.StatusCode == http.StatusConflict {
 			contentType := resp.Header.Get("Content-Type")
-			handleConflict(resp, body, entry.Title, entry.Year, jsonData, contentType == "application/json")
+			handleConflict(resp, body, entry.Title, entry.Year, jsonData, contentType == "application/json", url)
 		} else {
 			errorExit(string(body))
 		}
@@ -132,7 +135,7 @@ func readFileIMDB(file *os.File) {
 	}
 }
 
-func readFileLetterboxd(file *os.File) {
+func readFileLetterboxd(file *os.File, url string) {
 	fileScanner := bufio.NewScanner(file)
 	i := 0
 	for fileScanner.Scan() {
@@ -165,7 +168,7 @@ func readFileLetterboxd(file *os.File) {
 		client := http.Client{
 			Timeout: time.Second,
 		}
-		resp, err := client.Post("http://localhost:8080/movies", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
 			errorExit("Cannot send request to server.\nMake sure the API is on.")
 		}
@@ -179,7 +182,7 @@ func readFileLetterboxd(file *os.File) {
 			fmt.Printf("%s (%d) added!\n", entry.Title, entry.Year)
 		} else if resp.StatusCode == http.StatusConflict {
 			contentType := resp.Header.Get("Content-Type")
-			handleConflict(resp, body, entry.Title, entry.Year, jsonData, contentType == "application/json")
+			handleConflict(resp, body, entry.Title, entry.Year, jsonData, contentType == "application/json", url)
 		} else {
 			errorExit(string(body))
 		}
@@ -189,7 +192,7 @@ func readFileLetterboxd(file *os.File) {
 }
 
 // Worst Code Ever
-func handleConflict(resp *http.Response, body []byte, movieTitle string, movieYear int, jsonData []byte, isJSON bool) {
+func handleConflict(resp *http.Response, body []byte, movieTitle string, movieYear int, jsonData []byte, isJSON bool, url string) {
 	client := http.Client{
 		Timeout: time.Second,
 	}
@@ -214,7 +217,7 @@ ForeverLoop:
 		case "1":
 			break ForeverLoop
 		case "2":
-			_, err := client.Post("http://localhost:8080/movies/force", "application/json", bytes.NewBuffer(jsonData))
+			_, err := client.Post(url+"/force", "application/json", bytes.NewBuffer(jsonData))
 			if err != nil {
 				errorExit("Cannot force insert the movie.")
 			}
@@ -229,7 +232,7 @@ ForeverLoop:
 				errorExit("JSON Unmarshaling failed.")
 			}
 			movieID := errInfo.DuplicateID
-			putURL := fmt.Sprintf("http://localhost:8080/movies/%d", movieID)
+			putURL := fmt.Sprintf("%s/%d", url, movieID)
 			req, err := http.NewRequest("PUT", putURL, bytes.NewBuffer(jsonData))
 			if err != nil {
 				errorExit("Cannot update the movie.")

@@ -73,7 +73,7 @@ func (t *TUI) addMovieButton() {
 		panic(err)
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/movies", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/movies", t.Port), bytes.NewBuffer(jsonData))
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func (t *TUI) addMovieButton() {
 		t.WarningOkButton.SetLabel("Yes")
 		t.WarningNoButton.SetLabel("No")
 		t.WarningOkButton.SetSelectedFunc(func() {
-			req, err := http.NewRequest("POST", "http://localhost:8080/movies/force", bytes.NewBuffer(jsonData))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/movies/force", t.Port), bytes.NewBuffer(jsonData))
 			if err != nil {
 				panic(err)
 			}

@@ -12,7 +12,7 @@ func (t *TUI) deleteMovie(movie Movie) {
 	t.WarningOkButton.SetLabel("Yes")
 	t.WarningNoButton.SetLabel("No")
 	t.WarningOkButton.SetSelectedFunc(func() {
-		theURL := fmt.Sprintf("http://localhost:8080/movies/%d", movie.ID)
+		theURL := fmt.Sprintf("http://localhost:%d/movies/%d", t.Port, movie.ID)
 		req, err := http.NewRequest("DELETE", theURL, nil)
 		if err != nil {
 			panic(err)
