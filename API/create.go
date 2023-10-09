@@ -28,6 +28,11 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 			return
 		}
 
+		if (movie.Rating != nil && (*movie.Rating < 1 || *movie.Rating > 10)) || (movie.ImdbRating != nil && (*movie.ImdbRating < 1 || *movie.ImdbRating > 10)) {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
 		// Setting up a transaction for multiple statements
 		tx, err := app.db.Begin()
 		if err != nil {
