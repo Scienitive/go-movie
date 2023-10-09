@@ -4,7 +4,7 @@ A movie rating app on terminal.
 
 I made this project to learn more about Go programming language.
 
-![Video](./Assets/tui.mp4)
+https://github.com/Scienitive/moviterm/assets/58879237/6098ddb4-e284-4b2d-b188-54e4105f1f02
 
 ## Usage
 
@@ -119,7 +119,7 @@ The application that consumes the API.
 
 I could've made a web app but I wanted to make something different and made this terminal app.
 
-![Visual](./Assets/tui2.gif)
+![Visual](./Assets/tui.gif)
 
 It's based on tview package.
 
