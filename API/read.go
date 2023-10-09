@@ -35,8 +35,8 @@ type Filter struct {
 
 // Order Enum
 const (
-	OrderTitleDESC = iota
-	OrderTitleASC
+	OrderTitleASC = iota
+	OrderTitleDESC
 	OrderYearDESC
 	OrderYearASC
 	OrderRatingDESC
@@ -45,10 +45,10 @@ const (
 	OrderImdbRatingASC
 	OrderDateDESC
 	OrderDateASC
-	OrderGenresDESC
 	OrderGenresASC
-	OrderDirectorsDESC
+	OrderGenresDESC
 	OrderDirectorsASC
+	OrderDirectorsDESC
 )
 
 // Base GET Request
