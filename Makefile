@@ -1,6 +1,9 @@
 PORT=8080
 FILE=
 
+all:
+	@echo "For more information: github.com/Scienitive/moviterm"
+
 api:
 	go run API/*.go -port $(PORT)
 
