@@ -99,7 +99,9 @@ func (t *TUI) addMovieButton() {
 			client.Do(req)
 			t.Pages.HidePage("warning")
 			t.Table.Clear()
-			t.fillTable(t.Table)
+			if err := t.fillTable(t.Table); err != nil {
+				panic(err)
+			}
 		})
 		t.WarningNoButton.SetSelectedFunc(func() {
 			t.Pages.HidePage("warning")
@@ -112,7 +114,9 @@ func (t *TUI) addMovieButton() {
 	}
 
 	t.Table.Clear()
-	t.fillTable(t.Table)
+	if err := t.fillTable(t.Table); err != nil {
+		panic(err)
+	}
 	t.Pages.HidePage("add")
 }
 

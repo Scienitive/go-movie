@@ -31,7 +31,9 @@ func (t *TUI) deleteMovie(movie Movie) {
 		}
 
 		t.Table.Clear()
-		t.fillTable(t.Table)
+		if err := t.fillTable(t.Table); err != nil {
+			panic(err)
+		}
 		t.Pages.HidePage("warning")
 	})
 	t.WarningNoButton.SetSelectedFunc(func() {

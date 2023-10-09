@@ -90,6 +90,8 @@ func (t *TUI) editMovieButton() {
 	}
 
 	t.Table.Clear()
-	t.fillTable(t.Table)
+	if err := t.fillTable(t.Table); err != nil {
+		panic(err)
+	}
 	t.Pages.HidePage("add")
 }

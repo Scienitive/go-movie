@@ -18,7 +18,9 @@ func (t *TUI) filterMovieButton() {
 	t.FilterGenres = t.FilterForm.GetFormItem(8).(*tview.InputField).GetText()
 
 	t.Table.Clear()
-	t.fillTable(t.Table)
+	if err := t.fillTable(t.Table); err != nil {
+		panic(err)
+	}
 	t.Pages.HidePage("filter")
 }
 

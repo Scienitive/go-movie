@@ -41,5 +41,7 @@ func (t *TUI) orderFilter(c rune) {
 	}
 
 	t.Table.Clear()
-	t.fillTable(t.Table)
+	if err := t.fillTable(t.Table); err != nil {
+		panic(err)
+	}
 }
