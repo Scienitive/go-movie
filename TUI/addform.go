@@ -107,7 +107,7 @@ func (t *TUI) addMovieButton() {
 		})
 		t.Pages.ShowPage("warning")
 		t.Pages.HidePage("add")
-	} else if resp.StatusCode != http.StatusOK {
+	} else if resp.StatusCode != http.StatusCreated {
 		panic("Connection error with server")
 	}
 

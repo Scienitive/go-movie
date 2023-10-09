@@ -170,7 +170,7 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/movies/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		return
 	}
 
@@ -203,7 +203,7 @@ func (app *App) getMovieByIdHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	err = row.Scan(&movie.ID, &movie.Date, &movie.Title, &movie.Year, &movie.Rating, &movie.ImdbRating, &genres, &directors)
 	if err != nil {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		return
 	}
 	movie.Genres = strPtrToSlice(genres)

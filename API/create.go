@@ -185,6 +185,7 @@ func (app *App) insertMovieHandler(forced bool) http.HandlerFunc {
 			return
 		}
 
+		w.WriteHeader(http.StatusCreated)
 		fmt.Fprintln(w, "Movie successfully inserted.")
 	}
 }

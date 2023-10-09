@@ -26,7 +26,7 @@ func (app *App) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/movies/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		tx.Rollback()
 		return
 	}
@@ -51,7 +51,7 @@ func (app *App) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if count <= 0 {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		tx.Rollback()
 		return
 	}
@@ -63,5 +63,6 @@ func (app *App) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
 	fmt.Fprintln(w, "Movie successfully deleted.")
 }

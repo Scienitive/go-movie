@@ -26,7 +26,7 @@ func (t *TUI) deleteMovie(movie Movie) {
 			panic(err)
 		}
 
-		if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode != http.StatusNoContent {
 			panic("Connection error with server")
 		}
 

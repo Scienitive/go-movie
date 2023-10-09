@@ -34,7 +34,7 @@ func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/movies/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		tx.Rollback()
 		return
 	}
@@ -60,7 +60,7 @@ func (app *App) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if count <= 0 {
-		http.Error(w, "Invalid movie ID", http.StatusBadRequest)
+		http.Error(w, "Invalid movie ID", http.StatusNotFound)
 		tx.Rollback()
 		return
 	}

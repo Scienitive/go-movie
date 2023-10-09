@@ -122,7 +122,7 @@ func readFileIMDB(file *os.File, url string) {
 			errorExit("Cannot read the response body.")
 		}
 
-		if resp.StatusCode == http.StatusOK {
+		if resp.StatusCode == http.StatusCreated {
 			fmt.Printf("%s (%d) added!\n", entry.Title, entry.Year)
 		} else if resp.StatusCode == http.StatusConflict {
 			contentType := resp.Header.Get("Content-Type")
@@ -178,7 +178,7 @@ func readFileLetterboxd(file *os.File, url string) {
 			errorExit("Cannot read the response body.")
 		}
 
-		if resp.StatusCode == http.StatusOK {
+		if resp.StatusCode == http.StatusCreated {
 			fmt.Printf("%s (%d) added!\n", entry.Title, entry.Year)
 		} else if resp.StatusCode == http.StatusConflict {
 			contentType := resp.Header.Get("Content-Type")
